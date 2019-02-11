@@ -1,3 +1,7 @@
+
+
+/******************************** D E L E T E    A L L    U N U S E D   S U B S   ***************************/
+
 function AL_Delete_Unused_Subs(){
 
 	/*Delete substitution of the selected drawings that are not exposed inbetween the render brackets of the timeline. 
@@ -29,7 +33,9 @@ function AL_Delete_Unused_Subs(){
 
 		paths : [],
 
-		used_in_scene : []
+		used_in_scene : [],
+
+		deleted : []
 
 	}
 
@@ -40,7 +46,7 @@ function AL_Delete_Unused_Subs(){
 
 
 
-	scene.beginUndoRedoAccum("AL_Delete_Unused_Subs");
+	scene.beginUndoRedoAccum("Delete_unexposed_substitutions");
 
 	build_file_tab()
 
@@ -108,61 +114,9 @@ function AL_Delete_Unused_Subs(){
 	}
 
 
-
-	function store_file_path(filename){
-
-		MessageLog.trace("\n=======store_file_path\n")
-
-		if(!includes(FILES_TAB.paths,filename)){
-
-			FILES_TAB.paths.push(filename);
-
-			FILES_TAB.used_in_scene.push(false)
-
-			MessageLog.trace(filename)
-
-		}
-
-	}
-
-	function is_file_used_in_scene(filename){
+	/* FILE MANAGEMENT */
 
 
-		MessageLog.trace("\n=======is_file_used_in_scene\n")
-
-		for(var f = 0 ; f < FILES_TAB.paths.length ; f++){
-			if(FILES_TAB.paths[f]==filename){
-
-				return FILES_TAB.used_in_scene[f]
-			}
-
-		}
-
-	}
-
-	function mark_file_as_used(filename){
-
-		MessageLog.trace("\n=======Mark_file_as_used\n")
-
-		for(var f = 0 ; f < FILES_TAB.paths.length ; f++){
-
-			if(FILES_TAB.paths[f]==filename){
-
-				FILES_TAB.used_in_scene[f] = true;
-
-				return true
-
-			}
-		}
-
-		return false;
-
-	}
-
-	function mark_file_as_deleted(filename){
-
-
-	}
 
 	function build_file_tab(){
 
@@ -172,7 +126,9 @@ function AL_Delete_Unused_Subs(){
 
 			paths : [],
 
-			used_in_scene : []
+			used_in_scene : [],
+
+			deleted : []
 
 		}	
 
@@ -248,6 +204,126 @@ function AL_Delete_Unused_Subs(){
 	}
 
 
+	function store_file_path(filename){
+
+		MessageLog.trace("\n=======store_file_path\n")
+
+		if(!includes(FILES_TAB.paths,filename)){
+
+			FILES_TAB.paths.push(filename);
+
+			FILES_TAB.used_in_scene.push(false)
+
+			FILES_TAB.deleted.push(false)
+
+			MessageLog.trace(filename)
+
+		}
+
+	}
+
+
+
+	function get_sub_file_name(drawingnode,subname){
+
+		var drawing_id = node.getElementId(drawingnode);
+
+		return Drawing.filename(drawing_id,subname);
+
+	}
+
+
+
+	function is_file_used_in_scene(filename){
+
+		MessageLog.trace("\n=======is_file_used_in_scene\n")
+
+		for(var f = 0 ; f < FILES_TAB.paths.length ; f++){
+			if(FILES_TAB.paths[f]==filename){
+
+				return FILES_TAB.used_in_scene[f]
+			}
+
+		}
+
+	}
+
+
+	function mark_file_as_used(filename){
+
+		MessageLog.trace("\n=======Mark_file_as_used\n")
+
+		for(var f = 0 ; f < FILES_TAB.paths.length ; f++){
+
+			if(FILES_TAB.paths[f]==filename){
+
+				FILES_TAB.used_in_scene[f] = true;
+
+				return true
+
+			}
+		}
+
+		return false;
+
+	}
+
+	function mark_file_as_deleted(filename){
+
+
+		MessageLog.trace("\n=======Mark_file_as_deleted\n")
+
+		for(var f = 0 ; f < FILES_TAB.paths.length ; f++){
+
+			if(FILES_TAB.paths[f]==filename){
+
+				FILES_TAB.deleted[f] = true;
+
+				return true
+
+			}
+		}
+
+		return false;
+
+	}
+
+
+
+	function is_file_deleted(filename){
+
+
+		MessageLog.trace("\n=======is_file_deleted\n")
+
+		for(var f = 0 ; f < FILES_TAB.paths.length ; f++){
+			if(FILES_TAB.paths[f]==filename){
+
+				return FILES_TAB.deleted[f];
+			}
+
+		}
+
+	}
+
+	/*SUBSTITUTION CLASS*/
+
+	function Substitution(subname,subfile,linkeddrawings){
+
+		this.subname = subname;
+		this.subfile = subfile; 
+		this.linkeddrawings = linkeddrawings;
+
+		this.delete = function(){
+
+
+
+		}
+
+
+	}
+
+
+
 	function Find_Unexposed_Substitutions(){
 
 		MessageLog.trace("\n===============Find_Unexposed_Substitutions\n")
@@ -262,8 +338,6 @@ function AL_Delete_Unused_Subs(){
 				if (column.type(currentColumn) == "DRAWING"){
 
 					var drawing_node = Timeline.selToNode(i);
-
-					var drawing_id = node.getElementId(drawing_node)
 
 					var substitution_timing = column.getDrawingTimings(currentColumn);
 
@@ -303,7 +377,7 @@ function AL_Delete_Unused_Subs(){
 							MessageLog.trace(u)
 							MessageLog.trace(unexposed_subs[u])
 
-							var sub_linked_file = Drawing.filename(drawing_id,unexposed_subs[u])
+							var sub_linked_file = get_sub_file_name(drawing_node,unexposed_subs[u])
 
 							if(is_file_used_in_scene(sub_linked_file)==false){
 									
@@ -359,9 +433,18 @@ function AL_Delete_Unused_Subs(){
 
 				column.setEntry(currentColumn,1,curFrame,sub_to_delete);
 
-				column.deleteDrawingAt(currentColumn,curFrame)  
+				var sub_file = get_sub_file_name(substituions_tab.drawings[c],sub_to_delete)
 
-				MessageLog.trace("SUBSTITION "+sub_to_delete+" DELETED")							
+				if(!is_file_deleted(sub_file)){
+
+					column.deleteDrawingAt(currentColumn,curFrame)  
+					MessageLog.trace("SUBSTITION "+sub_to_delete+" DELETED")		
+
+					mark_file_as_deleted(sub_file)	
+
+				}
+
+								
 
 			}
 
@@ -388,6 +471,7 @@ function AL_Delete_Unused_Subs(){
 
 		//Verifie sur le nom examiné contient le mots clef 
 		if(n.match(regex))MessageLog.trace(n+"--------->match!");
+
 		return n.match(regex);
 		
 	}
