@@ -2,7 +2,7 @@
 
 /******************************** D E L E T E    A L L    U N U S E D   S U B S   ***************************/
 
-function AL_Delete_Unused_Subs(){
+function AL_Delete_Unused_Substitutions(){
 
 	/*Delete substitution of the selected drawings that are not exposed inbetween the render brackets of the timeline. 
 	*/
