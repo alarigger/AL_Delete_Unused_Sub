@@ -1,7 +1,4 @@
 
-
-/******************************** D E L E T E    A L L    U N U S E D   S U B S   ***************************/
-
 function AL_Delete_Unused_Substitutions(){
 
 	/*Delete substitution of the selected drawings that are not exposed inbetween the render brackets of the timeline. 
@@ -93,6 +90,11 @@ function AL_Delete_Unused_Substitutions(){
 
 			}
 
+			if(rapport.length>100){
+				rapport = "Sorry too much informations to display please see the MessageLog"
+
+			}
+
 			MessageBox.information(rapport)
 
 
@@ -107,6 +109,11 @@ function AL_Delete_Unused_Substitutions(){
 		    
 	
 		}else{
+
+			if(rapport.length>100){
+				rapport = "Sorry too much informations to display please see the MessageLog"
+
+			}
 
 			 MessageBox.information( rapport);
 		}
@@ -312,13 +319,6 @@ function AL_Delete_Unused_Substitutions(){
 		this.subname = subname;
 		this.subfile = subfile; 
 		this.linkeddrawings = linkeddrawings;
-
-		this.delete = function(){
-
-
-
-		}
-
 
 	}
 
