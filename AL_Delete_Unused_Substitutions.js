@@ -388,7 +388,7 @@ function AL_Delete_Unused_Substitutions() {
 
                     }
 
-                    MessageLog.trace(drawing_node + " --- " + unused_subs);
+                    //MessageLog.trace(drawing_node + " --- " + unused_subs);
 
                     if (unexposed_subs.length > 0) {
 
@@ -465,16 +465,6 @@ function AL_Delete_Unused_Substitutions() {
 
     function radian(a) {
         return a * Math.PI / 180
-    }
-
-
-    function check_name_pattern(n, regex) {
-
-        //Verifie sur le nom examiné contient le mots clef 
-        if (n.match(regex)) MessageLog.trace(n + "--------->match!");
-
-        return n.match(regex);
-
     }
 
     function includes(array, item) {
