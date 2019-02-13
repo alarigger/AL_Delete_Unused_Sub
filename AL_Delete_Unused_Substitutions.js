@@ -1,517 +1,512 @@
+function AL_Delete_Unused_Substitutions() {
 
-function AL_Delete_Unused_Substitutions(){
+    /*Delete substitution of the selected drawings that are not exposed inbetween the render brackets of the timeline. 
+     */
 
-	/*Delete substitution of the selected drawings that are not exposed inbetween the render brackets of the timeline. 
-	*/
 
 
+    /***************** V A R I A B L E S */
 
-	/***************** V A R I A B L E S */
 
 
+    var curFrame = frame.current();
 
-	var curFrame = frame.current();
+    var sceneFrames = frame.numberOf();
 
-	var sceneFrames = frame.numberOf();
+    var numSelLayers = Timeline.numLayerSel;
 
-	var numSelLayers = Timeline.numLayerSel;
+    var substituions_tab = {
 
-	var substituions_tab ={
+        columns: [],
 
-		columns:[],
+        drawings: [],
 
-		drawings:[],
+        substitions: [],
 
-		substitions:[],
+    };
 
-	};
+    var FILES_TAB = {
 
-	var FILES_TAB ={
+        paths: [],
 
-		paths : [],
+        used_in_scene: [],
 
-		used_in_scene : [],
+        deleted: []
 
-		deleted : []
+    }
 
-	}
 
 
 
+    /**************** E X E C U T I O N */
 
-	/**************** E X E C U T I O N */
 
 
+    scene.beginUndoRedoAccum("Delete_unexposed_substitutions");
 
-	scene.beginUndoRedoAccum("Delete_unexposed_substitutions");
+    build_file_tab()
 
-	build_file_tab()
+    check_unused_sub_files()
 
-	check_unused_sub_files()
+    ConfirmDialog()
 
-	ConfirmDialog()
+    scene.endUndoRedoAccum();
 
-	scene.endUndoRedoAccum();
 
 
+    /**************** F U N C T I O N S */
 
-	/**************** F U N C T I O N S */ 
 
 
 
+    function ConfirmDialog() {
 
-	function ConfirmDialog() {
+        //MessageLog.trace("\n===================ConfirmDialog\n")
 
-		MessageLog.trace("\n===================ConfirmDialog\n")
+        var rapport = "No unexposed substitutions to delete"
 
-		var rapport = "No unexposed substitutions to delete"
+        if (Find_Unexposed_Substitutions()) {
 
-	    if(Find_Unexposed_Substitutions()){
+            var d = new Dialog
 
-    		var d = new Dialog
+            d.title = "Delete_unexposed_substitutions";
 
-    		d.title = "Delete_unexposed_substitutions";
+            rapport = "The following subsitutions will be deleted : "
 
-    		rapport = "The following subsitutions will be deleted : "
-		   
 
-			for(var c = 0; c<substituions_tab.columns.length;c++){
+            for (var c = 0; c < substituions_tab.columns.length; c++) {
 
-				var currentColumn = substituions_tab.columns[c];
+                var currentColumn = substituions_tab.columns[c];
 
-				var drawing = substituions_tab.drawings[c];
-				
-				for(var u =  0; u <substituions_tab.substitions[c].length;u++){
+                var drawing = substituions_tab.drawings[c];
 
-					var sub_to_delete = substituions_tab.substitions[c][u];
+                for (var u = 0; u < substituions_tab.substitions[c].length; u++) {
 
-					rapport+= "\n"+drawing+" : "+sub_to_delete;						
-				}
+                    var sub_to_delete = substituions_tab.substitions[c][u];
 
-			}
+                    rapport += "\n" + drawing + " : " + sub_to_delete;
+                }
 
-			if(rapport.length>100){
-				rapport = "Sorry too much informations to display please see the MessageLog"
+            }
 
-			}
+            MessageLog.trace(rapport);
 
-			MessageBox.information(rapport)
+            if (rapport.length > 500) {
+                rapport = "Sorry too much informations to display please see the MessageLog"
 
+            }
 
-			var rc = d.exec();
+            MessageBox.information(rapport)
 
-			if( rc )
-			{
 
-				Delete_Substitutions();
+            var rc = d.exec();
 
-			}
-		    
-	
-		}else{
+            if (rc) {
 
-			if(rapport.length>100){
-				rapport = "Sorry too much informations to display please see the MessageLog"
+                Delete_Substitutions();
 
-			}
+            }
 
-			 MessageBox.information( rapport);
-		}
 
-	}
+        } else {
 
+        	MessageLog.trace(rapport);
 
-	/* FILE MANAGEMENT */
+            if (rapport.length > 500) {
+                rapport = "Sorry too much informations to display please see the MessageLog"
 
+            }
 
+            MessageBox.information(rapport);
 
-	function build_file_tab(){
+        }
 
-		MessageLog.trace("\n===============build_file_tab\n")
+    }
 
-		FILES_TAB ={
 
-			paths : [],
+    /* FILE MANAGEMENT */
 
-			used_in_scene : [],
 
-			deleted : []
 
-		}	
+    function build_file_tab() {
 
-		var SceneDrawings = node.getNodes(['READ']);
+        //MessageLog.trace("\n===============build_file_tab\n")
 
-		for(var d = 0 ; d < SceneDrawings.length; d++){
+        FILES_TAB = {
 
-			var drawing_node = SceneDrawings[d]
+            paths: [],
 
-			var drawing_node_element_id = node.getElementId(drawing_node);
+            used_in_scene: [],
 
-			for(var j = 0 ; j < Drawing.numberOf(drawing_node_element_id); j++  )
-			{
-				var drawingName= Drawing.name(drawing_node_element_id,j);
+            deleted: []
 
-				var drawingFileName = Drawing.filename(drawing_node_element_id,drawingName)
+        }
 
-				store_file_path(drawingFileName);
+        var SceneDrawings = node.getNodes(['READ']);
 
-			}
+        for (var d = 0; d < SceneDrawings.length; d++) {
 
-		}
+            var drawing_node = SceneDrawings[d]
 
-	}
+            var drawing_node_element_id = node.getElementId(drawing_node);
 
+            for (var j = 0; j < Drawing.numberOf(drawing_node_element_id); j++) {
+                var drawingName = Drawing.name(drawing_node_element_id, j);
 
-	function check_unused_sub_files(){
+                var drawingFileName = Drawing.filename(drawing_node_element_id, drawingName)
 
-		MessageLog.trace("\n===============check_unused_sub_files\n")
+                store_file_path(drawingFileName);
 
-		for ( var i = 0; i < Timeline.numLayers ; i++){
+            }
 
-			if ( Timeline.layerIsColumn(i)){
+        }
 
-				var currentColumn = Timeline.layerToColumn(i);
+    }
 
-				if (column.type(currentColumn) == "DRAWING"){
 
-					var drawing_node = Timeline.layerToNode(i);
+    function check_unused_sub_files() {
 
-					var drawing_id = node.getElementId(drawing_node)
+       // MessageLog.trace("\n===============check_unused_sub_files\n")
 
-					for(var f=0; f<sceneFrames+1;f++){
+        for (var i = 0; i < Timeline.numLayers; i++) {
 
-						var current_sub = column.getEntry(currentColumn,1,f);
+            if (Timeline.layerIsColumn(i)) {
 
-						if(current_sub!=""){
+                var currentColumn = Timeline.layerToColumn(i);
 
-							var sub_file = Drawing.filename(drawing_id,current_sub)
+                if (column.type(currentColumn) == "DRAWING") {
 
-							if(is_file_used_in_scene(sub_file)==false){
+                    var drawing_node = Timeline.layerToNode(i);
 
-								mark_file_as_used(sub_file);
+                    var drawing_id = node.getElementId(drawing_node)
 
-							}
+                    for (var f = 0; f < sceneFrames + 1; f++) {
 
-						}
+                        var current_sub = column.getEntry(currentColumn, 1, f);
 
-					}
+                        if (current_sub != "") {
 
+                            var sub_file = Drawing.filename(drawing_id, current_sub)
 
-				}
+                            if (is_file_used_in_scene(sub_file) == false) {
 
-			}
+                                mark_file_as_used(sub_file);
 
-		}
+                            }
 
+                        }
 
-		MessageLog.trace(FILES_TAB.paths)
-		MessageLog.trace(FILES_TAB.used_in_scene)
+                    }
 
 
-	}
+                }
 
+            }
 
-	function store_file_path(filename){
+        }
 
-		MessageLog.trace("\n=======store_file_path\n")
 
-		if(!includes(FILES_TAB.paths,filename)){
+        //MessageLog.trace(FILES_TAB.paths)
+        //MessageLog.trace(FILES_TAB.used_in_scene)
 
-			FILES_TAB.paths.push(filename);
 
-			FILES_TAB.used_in_scene.push(false)
+    }
 
-			FILES_TAB.deleted.push(false)
 
-			MessageLog.trace(filename)
+    function store_file_path(filename) {
 
-		}
+       // MessageLog.trace("\n=======store_file_path\n")
 
-	}
+        if (!includes(FILES_TAB.paths, filename)) {
 
+            FILES_TAB.paths.push(filename);
 
+            FILES_TAB.used_in_scene.push(false)
 
-	function get_sub_file_name(drawingnode,subname){
+            FILES_TAB.deleted.push(false)
 
-		var drawing_id = node.getElementId(drawingnode);
+            //MessageLog.trace(filename)
 
-		return Drawing.filename(drawing_id,subname);
+        }
 
-	}
+    }
 
 
 
-	function is_file_used_in_scene(filename){
+    function get_sub_file_name(drawingnode, subname) {
 
-		MessageLog.trace("\n=======is_file_used_in_scene\n")
+        var drawing_id = node.getElementId(drawingnode);
 
-		for(var f = 0 ; f < FILES_TAB.paths.length ; f++){
-			if(FILES_TAB.paths[f]==filename){
+        return Drawing.filename(drawing_id, subname);
 
-				return FILES_TAB.used_in_scene[f]
-			}
+    }
 
-		}
 
-	}
 
+    function is_file_used_in_scene(filename) {
 
-	function mark_file_as_used(filename){
+        //MessageLog.trace("\n=======is_file_used_in_scene\n")
 
-		MessageLog.trace("\n=======Mark_file_as_used\n")
+        for (var f = 0; f < FILES_TAB.paths.length; f++) {
+            if (FILES_TAB.paths[f] == filename) {
 
-		for(var f = 0 ; f < FILES_TAB.paths.length ; f++){
+                return FILES_TAB.used_in_scene[f]
+            }
 
-			if(FILES_TAB.paths[f]==filename){
+        }
 
-				FILES_TAB.used_in_scene[f] = true;
+    }
 
-				return true
 
-			}
-		}
+    function mark_file_as_used(filename) {
 
-		return false;
+       // MessageLog.trace("\n=======Mark_file_as_used\n")
 
-	}
+        for (var f = 0; f < FILES_TAB.paths.length; f++) {
 
-	function mark_file_as_deleted(filename){
+            if (FILES_TAB.paths[f] == filename) {
 
+                FILES_TAB.used_in_scene[f] = true;
 
-		MessageLog.trace("\n=======Mark_file_as_deleted\n")
+                return true
 
-		for(var f = 0 ; f < FILES_TAB.paths.length ; f++){
+            }
+        }
 
-			if(FILES_TAB.paths[f]==filename){
+        return false;
 
-				FILES_TAB.deleted[f] = true;
+    }
 
-				return true
+    function mark_file_as_deleted(filename) {
 
-			}
-		}
 
-		return false;
+       // MessageLog.trace("\n=======Mark_file_as_deleted\n")
 
-	}
+        for (var f = 0; f < FILES_TAB.paths.length; f++) {
 
+            if (FILES_TAB.paths[f] == filename) {
 
+                FILES_TAB.deleted[f] = true;
 
-	function is_file_deleted(filename){
+                return true
 
+            }
+        }
 
-		MessageLog.trace("\n=======is_file_deleted\n")
+        return false;
 
-		for(var f = 0 ; f < FILES_TAB.paths.length ; f++){
-			if(FILES_TAB.paths[f]==filename){
+    }
 
-				return FILES_TAB.deleted[f];
-			}
 
-		}
 
-	}
+    function is_file_deleted(filename) {
 
-	/*SUBSTITUTION CLASS*/
 
-	function Substitution(subname,subfile,linkeddrawings){
+       // MessageLog.trace("\n=======is_file_deleted\n")
 
-		this.subname = subname;
-		this.subfile = subfile; 
-		this.linkeddrawings = linkeddrawings;
+        for (var f = 0; f < FILES_TAB.paths.length; f++) {
+            if (FILES_TAB.paths[f] == filename) {
 
-	}
+                return FILES_TAB.deleted[f];
+            }
 
+        }
 
+    }
 
-	function Find_Unexposed_Substitutions(){
+    /*SUBSTITUTION CLASS*/
 
-		MessageLog.trace("\n===============Find_Unexposed_Substitutions\n")
+    function Substitution(subname, subfile, linkeddrawings) {
 
-		 for ( var i = 0; i < numSelLayers; i++ )
-		{
+        this.subname = subname;
+        this.subfile = subfile;
+        this.linkeddrawings = linkeddrawings;
 
-	 		if ( Timeline.selIsColumn(i)){
-	 			
-				var currentColumn = Timeline.selToColumn(i);
+    }
 
-				if (column.type(currentColumn) == "DRAWING"){
 
-					var drawing_node = Timeline.selToNode(i);
 
-					var substitution_timing = column.getDrawingTimings(currentColumn);
+    function Find_Unexposed_Substitutions() {
+//
+        MessageLog.trace("\n===============Find_Unexposed_Substitutions\n")
 
-					var unexposed_subs = substitution_timing;
+        for (var i = 0; i < numSelLayers; i++) {
 
+            if (Timeline.selIsColumn(i)) {
 
-					//on fait la liste des subs non exposées par le drawing
-					var indexToRemove="";
+                var currentColumn = Timeline.selToColumn(i);
 
-					for(var f=0; f<sceneFrames+1;f++){
+                if (column.type(currentColumn) == "DRAWING") {
 
-						var current_substitution = column.getEntry(currentColumn,1,f);
+                    var drawing_node = Timeline.selToNode(i);
 
-						/*on elève les sub exposées de la liste*/
+                    var substitution_timing = column.getDrawingTimings(currentColumn);
 
+                    var unexposed_subs = substitution_timing;
 
-						if(current_substitution!=""){
 
-							indexToRemove = unexposed_subs.indexOf(current_substitution);
+                    //on fait la liste des subs non exposées par le drawing
+                    var indexToRemove = "";
 
-							if(indexToRemove>-1){
-								unexposed_subs.splice(indexToRemove,1);
-							}
+                    for (var f = 0; f < sceneFrames + 1; f++) {
 
-						}
+                        var current_substitution = column.getEntry(currentColumn, 1, f);
 
+                        /*on elève les sub exposées de la liste*/
 
 
-					}
+                        if (current_substitution != "") {
 
-					/* on verifie si les sub non exposés ne sont pas exposés dans d'autres drawing clonés*/
+                            indexToRemove = unexposed_subs.indexOf(current_substitution);
 
-					var unused_subs = []
+                            if (indexToRemove > -1) {
+                                unexposed_subs.splice(indexToRemove, 1);
+                            }
 
-					for( var u = 0 ; u < unexposed_subs.length+1 ; u++){
+                        }
 
-							MessageLog.trace(u)
-							MessageLog.trace(unexposed_subs[u])
 
-							var sub_linked_file = get_sub_file_name(drawing_node,unexposed_subs[u])
 
-							if(is_file_used_in_scene(sub_linked_file)==false){
-									
-									unused_subs.push(unexposed_subs[u])
+                    }
 
-							}
+                    /* on verifie si les sub non exposés ne sont pas exposés dans d'autres drawing clonés*/
 
-					}
+                    var unused_subs = []
 
-					MessageLog.trace( drawing_node+" --- "+unused_subs);
+                    for (var u = 0; u < unexposed_subs.length + 1; u++) {
 
-					if(unexposed_subs.length>0){
+                       // MessageLog.trace(u)
+                        //MessageLog.trace(unexposed_subs[u])
 
-						substituions_tab.columns.push(currentColumn);
+                        var sub_linked_file = get_sub_file_name(drawing_node, unexposed_subs[u])
 
-						substituions_tab.drawings.push(drawing_node);
+                        if (is_file_used_in_scene(sub_linked_file) == false) {
 
-						substituions_tab.substitions.push(unused_subs);
+                            unused_subs.push(unexposed_subs[u])
 
-					}
+                        }
 
-				}
+                    }
 
-			}
+                    MessageLog.trace(drawing_node + " --- " + unused_subs);
 
-		}
+                    if (unexposed_subs.length > 0) {
 
-		MessageLog.trace(substituions_tab);
+                        substituions_tab.columns.push(currentColumn);
 
-		if(substituions_tab.columns.length>0){
+                        substituions_tab.drawings.push(drawing_node);
 
-			return true
+                        substituions_tab.substitions.push(unused_subs);
 
-		}
+                    }
 
-		return false;
+                }
 
-	}
+            }
 
-	function Delete_Substitutions(){
+        }
 
-		MessageLog.trace("\n===================Delete_Substitutions\n")
+       // MessageLog.trace(substituions_tab);
 
-		for(var c = 0; c<substituions_tab.columns.length;c++){
+        if (substituions_tab.columns.length > 0) {
 
-			var currentColumn = substituions_tab.columns[c];
+            return true
 
-			var displayed_subs = column.getEntry(currentColumn,1,curFrame);
-			
-			for(var u =  0; u <substituions_tab.substitions[c].length;u++){
+        }
 
-				var sub_to_delete = substituions_tab.substitions[c][u];
+        return false;
 
-				column.setEntry(currentColumn,1,curFrame,sub_to_delete);
+    }
 
-				var sub_file = get_sub_file_name(substituions_tab.drawings[c],sub_to_delete)
+    function Delete_Substitutions() {
 
-				if(!is_file_deleted(sub_file)){
+        //MessageLog.trace("\n===================Delete_Substitutions\n")
 
-					column.deleteDrawingAt(currentColumn,curFrame)  
-					MessageLog.trace("SUBSTITION "+sub_to_delete+" DELETED")		
+        for (var c = 0; c < substituions_tab.columns.length; c++) {
 
-					mark_file_as_deleted(sub_file)	
+            var currentColumn = substituions_tab.columns[c];
 
-				}
+            var displayed_subs = column.getEntry(currentColumn, 1, curFrame);
 
-								
+            for (var u = 0; u < substituions_tab.substitions[c].length; u++) {
 
-			}
+                var sub_to_delete = substituions_tab.substitions[c][u];
 
-			column.setEntry(currentColumn,1,curFrame,displayed_subs);
-			
+                column.setEntry(currentColumn, 1, curFrame, sub_to_delete);
 
-		}
-			
-	}
+                var sub_file = get_sub_file_name(substituions_tab.drawings[c], sub_to_delete)
 
+                if (!is_file_deleted(sub_file)) {
 
-	/* FUNCTION UTILS */
-	
-	function Hypothenus(x,y){
-		return Math.sqrt((x*x)+(y*y)); 
-	}
+                    column.deleteDrawingAt(currentColumn, curFrame)
+                    MessageLog.trace("SUBSTITION " + sub_to_delete + " DELETED")
 
-	function radian(a){
-		return a*Math.PI/180
-	}
+                    mark_file_as_deleted(sub_file)
 
+                }
 
-	function check_name_pattern(n,regex){
 
-		//Verifie sur le nom examiné contient le mots clef 
-		if(n.match(regex))MessageLog.trace(n+"--------->match!");
 
-		return n.match(regex);
-		
-	}
-	function includes(array,item){
-		
-		for (var i = 0 ; i < array.length; i++){
-			if(array[i]==item){
-					return true; 
-			}
-		}
-		return false; 
-		
-	}
+            }
 
-	function reset_sub_tab(){
+            column.setEntry(currentColumn, 1, curFrame, displayed_subs);
 
-		substituions_tab ={
-			columns:[],
-			drawings:[],
-			substitions:[]
-		};
 
-	}
-	function getShortName(n){
-			
-		//Extrait le nom du node sans la hierarchie
-		split_string = n.split("/")
-		return split_string[split_string.length-1];
-		
-	}
+        }
 
+    }
 
-	
 
+    /* FUNCTION UTILS */
+
+    function Hypothenus(x, y) {
+        return Math.sqrt((x * x) + (y * y));
+    }
+
+    function radian(a) {
+        return a * Math.PI / 180
+    }
+
+
+    function check_name_pattern(n, regex) {
+
+        //Verifie sur le nom examiné contient le mots clef 
+        if (n.match(regex)) MessageLog.trace(n + "--------->match!");
+
+        return n.match(regex);
+
+    }
+
+    function includes(array, item) {
+
+        for (var i = 0; i < array.length; i++) {
+            if (array[i] == item) {
+                return true;
+            }
+        }
+        return false;
+
+    }
+
+    function reset_sub_tab() {
+
+        substituions_tab = {
+            columns: [],
+            drawings: [],
+            substitions: []
+        };
+
+    }
+
+    function getShortName(n) {
+
+        //Extrait le nom du node sans la hierarchie
+        split_string = n.split("/")
+        return split_string[split_string.length - 1];
+
+    }
 
 
 
 
 }
-
-
-
-
