@@ -35,7 +35,7 @@ function AL_Delete_Unused_Substitutions() {
 
     }
 
-
+ 	var rapport = "No unexposed substitutions to delete"
 
 
     /**************** E X E C U T I O N */
@@ -62,8 +62,6 @@ function AL_Delete_Unused_Substitutions() {
     function ConfirmDialog() {
 
         //MessageLog.trace("\n===================ConfirmDialog\n")
-
-        var rapport = "No unexposed substitutions to delete"
 
         if (Find_Unexposed_Substitutions()) {
 
@@ -375,8 +373,8 @@ function AL_Delete_Unused_Substitutions() {
 
                     for (var u = 0; u < unexposed_subs.length + 1; u++) {
 
-                       // MessageLog.trace(u)
-                        //MessageLog.trace(unexposed_subs[u])
+                       MessageLog.trace(u)
+                        MessageLog.trace(unexposed_subs[u])
 
                         var sub_linked_file = get_sub_file_name(drawing_node, unexposed_subs[u])
 
@@ -386,17 +384,24 @@ function AL_Delete_Unused_Substitutions() {
 
                         }
 
+
+
+
                     }
 
-                    //MessageLog.trace(drawing_node + " --- " + unused_subs);
+                    MessageLog.trace(drawing_node + " --- " + unused_subs);
 
-                    if (unexposed_subs.length > 0) {
+                    if (unused_subs.length > 0) {
 
                         substituions_tab.columns.push(currentColumn);
 
                         substituions_tab.drawings.push(drawing_node);
 
                         substituions_tab.substitions.push(unused_subs);
+
+                    }else{
+
+                    	
 
                     }
 
@@ -413,6 +418,8 @@ function AL_Delete_Unused_Substitutions() {
             return true
 
         }
+
+        
 
         return false;
 
