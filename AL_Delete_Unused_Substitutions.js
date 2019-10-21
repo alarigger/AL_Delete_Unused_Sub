@@ -1,5 +1,5 @@
 
-*/Alexandre cormier octobre 2019*/
+/*Alexandre cormier octobre 2019*/
 
 function AL_Delete_Unused_Substitutions() {
 
