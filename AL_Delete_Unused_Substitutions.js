@@ -1,3 +1,6 @@
+
+*/Alexandre cormier octobre 2019*/
+
 function AL_Delete_Unused_Substitutions() {
 
     /*Delete substitution of the selected drawings that are not exposed inbetween the render brackets of the timeline. 
